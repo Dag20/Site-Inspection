@@ -16,7 +16,22 @@ and the WhatsApp notification path.
 | `apps/web` | Installable web app (React, Vite, service worker). On-device database and outbox, sync engine, sync indicator, English and right-to-left Arabic switching. One small screen that exercises all of it. |
 | `docs/decisions.md` | The architecture choices and why. |
 
-## Run it
+## Run it in your browser (GitHub Codespaces)
+
+No installs needed. On the repository page choose **Code → Codespaces → Create codespace on main**.
+Setup takes a few minutes the first time: it installs packages, creates the database and loads the example project.
+Then, in the terminal at the bottom:
+
+```sh
+pnpm test     # the automated checks
+pnpm dev      # starts the API and the web app; open the "Web app" port when it appears
+```
+
+The web app signs in as Ahmed, the example site engineer. To try another role, change the user id in
+`apps/web/.env.local` to one printed by the seed step, then restart `pnpm dev`.
+The repository uses pnpm, not npm: `npm install` will fail on the workspace links.
+
+## Run it on your own computer
 
 Needs Node 22, pnpm and Docker.
 
@@ -26,13 +41,8 @@ docker compose up -d          # PostgreSQL and object storage
 pnpm install
 pnpm db:migrate
 pnpm db:seed                  # example project: Lusail Commercial Tower. Prints sign-in headers.
-pnpm dev:api                  # http://localhost:3000
-```
-
-In a second terminal, using one of the `organizationId:userId` pairs printed by the seed:
-
-```sh
-VITE_DEV_AUTH=<organizationId>:<userId> pnpm dev:web     # http://localhost:5173
+echo "VITE_DEV_AUTH=<organizationId>:<userId>" > apps/web/.env.local   # a pair printed by the seed
+pnpm dev                      # API on http://localhost:3000, web app on http://localhost:5173
 ```
 
 Offline behaviour needs the service worker, which only runs in a production build:

@@ -4,3 +4,4 @@ dev-dist
 .env
 *.log
 coverage
+.env.local

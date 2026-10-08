@@ -26,6 +26,8 @@ export default defineConfig({
       workbox: { navigateFallback: 'index.html', navigateFallbackDenylist: [/^\/v1\//, /^\/l\//] },
     }),
   ],
-  server: { proxy: { '/v1': 'http://localhost:3000' } },
+  // allowedHosts lets the dev server answer on a GitHub Codespaces forwarded address.
+  server: { proxy: { '/v1': 'http://localhost:3000' }, allowedHosts: ['.app.github.dev'] },
+  preview: { proxy: { '/v1': 'http://localhost:3000' } },
   test: { environment: 'node', setupFiles: ['fake-indexeddb/auto'] },
 });

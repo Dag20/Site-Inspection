@@ -1,0 +1,15 @@
+{
+  "name": "Site Inspection",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "forwardPorts": [5173, 3000],
+  "portsAttributes": {
+    "5173": { "label": "Web app", "onAutoForward": "openBrowser" },
+    "3000": { "label": "API", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": { "extensions": ["vitest.explorer"] }
+  }
+}
