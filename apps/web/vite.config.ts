@@ -26,8 +26,10 @@ export default defineConfig({
       workbox: { navigateFallback: 'index.html', navigateFallbackDenylist: [/^\/v1\//, /^\/l\//] },
     }),
   ],
-  // allowedHosts lets the dev server answer on a GitHub Codespaces forwarded address.
-  server: { proxy: { '/v1': 'http://localhost:3000' }, allowedHosts: ['.app.github.dev'] },
-  preview: { proxy: { '/v1': 'http://localhost:3000' } },
+  // host: listen on 127.0.0.1 explicitly. "localhost" can resolve to the IPv6 address only, which GitHub Codespaces'
+  // port forwarding cannot reach, and the page then fails with "can't currently handle this request".
+  // allowedHosts: answer on a Codespaces forwarded address.
+  server: { host: '127.0.0.1', proxy: { '/v1': 'http://127.0.0.1:3000' }, allowedHosts: ['.app.github.dev'] },
+  preview: { host: '127.0.0.1', proxy: { '/v1': 'http://127.0.0.1:3000' }, allowedHosts: ['.app.github.dev'] },
   test: { environment: 'node', setupFiles: ['fake-indexeddb/auto'] },
 });
