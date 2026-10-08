@@ -1,0 +1,23 @@
+{
+  "name": "site-inspection-platform",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @sip/api dev",
+    "dev:web": "pnpm --filter @sip/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @sip/api db:generate",
+    "db:migrate": "pnpm --filter @sip/api db:migrate",
+    "db:seed": "pnpm --filter @sip/api db:seed"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}

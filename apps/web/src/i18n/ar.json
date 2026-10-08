@@ -1,0 +1,13 @@
+{
+  "app.title": "فحص الموقع",
+  "sync.synced": "تمت المزامنة",
+  "sync.syncing": "جارٍ المزامنة",
+  "sync.offline": "غير متصل",
+  "issues.title": "الملاحظات",
+  "new.title": "ملاحظة جديدة",
+  "new.photo": "التقاط صورة",
+  "new.create": "إنشاء",
+  "status.open": "مفتوحة",
+  "status.closed": "مغلقة",
+  "lang.switch": "English"
+}
