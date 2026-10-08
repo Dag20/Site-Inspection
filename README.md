@@ -37,7 +37,7 @@ Needs Node 22, pnpm and Docker.
 
 ```sh
 cp .env.example .env
-docker compose up -d          # PostgreSQL and object storage
+docker compose up -d          # PostgreSQL
 pnpm install
 pnpm db:migrate
 pnpm db:seed                  # example project: Lusail Commercial Tower. Prints sign-in headers.

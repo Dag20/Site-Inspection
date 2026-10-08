@@ -1,4 +1,5 @@
 # Local development services. Production hosting is decided separately (see docs/decisions.md).
+# Object storage for photos is added with the photo upload work; nothing uses it yet.
 services:
   db:
     image: postgres:16
@@ -9,12 +10,5 @@ services:
     volumes:
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - dbdata:/var/lib/postgresql/data
-  storage:
-    image: minio/minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio12345
-    ports: ["9000:9000", "9001:9001"]
 volumes:
   dbdata:
