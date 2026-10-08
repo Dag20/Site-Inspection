@@ -16,6 +16,10 @@ declare module 'fastify' {
   interface FastifyRequest {
     auth: AuthContext;
   }
+  interface FastifyInstance {
+    /** Resolves when messages started by earlier requests have been handed to the channel. Used by tests and shutdown. */
+    notificationsSettled(): Promise<void>;
+  }
 }
 
 export interface AppDeps {
@@ -29,6 +33,13 @@ const idParam = z.object({ id: z.uuid() });
 
 export function createApp({ db, auth, channel, logger = false }: AppDeps): FastifyInstance {
   const app = Fastify({ logger });
+  const sending = new Set<Promise<unknown>>();
+  app.decorate('notificationsSettled', async () => {
+    await Promise.all([...sending]);
+  });
+  app.addHook('onClose', async () => {
+    await Promise.all([...sending]);
+  });
 
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof AppError) return reply.status(err.status).send({ error: { code: err.code, message: err.message } });
@@ -72,7 +83,9 @@ export function createApp({ db, auth, channel, logger = false }: AppDeps): Fasti
     async function run(req: { auth: AuthContext }, mutations: Mutation[]): Promise<MutationResult[]> {
       const results: MutationResult[] = [];
       for (const m of mutations) results.push(await applyMutation(db, req.auth, m));
-      void dispatchQueued(db, req.auth.organizationId, channel).catch((err) => app.log.error(err));
+      const job = dispatchQueued(db, req.auth.organizationId, channel).catch((err) => app.log.error(err));
+      sending.add(job);
+      void job.finally(() => sending.delete(job));
       return results;
     }
     async function runOne(req: { auth: AuthContext; headers: Record<string, unknown> }, m: Omit<Mutation, 'key' | 'clientTime'>) {

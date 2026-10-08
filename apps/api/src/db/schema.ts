@@ -29,7 +29,7 @@ export const severityEnum = pgEnum('severity', SEVERITIES);
 export const inspectionResultEnum = pgEnum('inspection_result', ['pass', 'fail', 'pass_with_comments', 'not_applicable']);
 export const inspectionStatusEnum = pgEnum('inspection_status', ['scheduled', 'in_progress', 'completed', 'cancelled']);
 export const ncrStatusEnum = pgEnum('ncr_status', ['open', 'assigned', 'action_proposed', 'evidence_submitted', 'rejected', 'approved', 'closed']);
-export const notificationStatusEnum = pgEnum('notification_status', ['queued', 'sent', 'delivered', 'failed']);
+export const notificationStatusEnum = pgEnum('notification_status', ['queued', 'sending', 'sent', 'delivered', 'failed']);
 export const channelEnum = pgEnum('channel', ['whatsapp', 'email']);
 export const attachmentKindEnum = pgEnum('attachment_kind', ['photo', 'file', 'signature']);
 export const attachmentPhaseEnum = pgEnum('attachment_phase', ['before', 'after', 'general']);
@@ -275,6 +275,8 @@ export const notifications = pgTable('notifications', {
   entityId: uuid('entity_id'),
   status: notificationStatusEnum('status').notNull().default('queued'),
   attempts: integer('attempts').notNull().default(0),
+  /** When a sender claimed this message. A claim older than a few minutes is treated as abandoned and retried. */
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
   providerMessageId: text('provider_message_id'),
   error: text('error'),
   /** Filled from the provider's delivery report so message spend can be reviewed each quarter. */

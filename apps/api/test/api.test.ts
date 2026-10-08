@@ -23,7 +23,10 @@ const ahmed = as(DEMO.org, DEMO.users.ahmed);
 const fatima = as(DEMO.org, DEMO.users.fatima);
 const ravi = as(DEMO.org, DEMO.users.ravi);
 const omar = as(DEMO.org, DEMO.users.omar);
-const flush = () => dispatchQueued(appDb.db, DEMO.org, channel);
+const flush = async () => {
+  await app.notificationsSettled();
+  await dispatchQueued(appDb.db, DEMO.org, channel);
+};
 
 beforeAll(async () => {
   await seedDemo(admin.db);
@@ -167,6 +170,16 @@ describe('offline sync', () => {
     expect(res.results[0].code).toBe('invalid_state');
     const detail = (await app.inject({ method: 'GET', url: `/v1/issues/${issueId}`, headers: fatima })).json();
     expect(detail.status).toBe('rejected');
+  });
+});
+
+describe('notifications', () => {
+  it('two senders running at once never send the same message twice', async () => {
+    channel.sent.length = 0;
+    const res = await app.inject({ method: 'POST', url: '/v1/issues', headers: ahmed, payload: { projectId: DEMO.project, title: 'Race check', category: 'Civil', contractorId: DEMO.contractors.gulfFitout } });
+    expect(res.statusCode).toBe(201);
+    await Promise.all([flush(), dispatchQueued(appDb.db, DEMO.org, channel), dispatchQueued(appDb.db, DEMO.org, channel)]);
+    expect(channel.sent.filter((m) => m.params.title === 'Race check')).toHaveLength(1);
   });
 });
 

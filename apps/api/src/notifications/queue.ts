@@ -1,4 +1,4 @@
-import { and, eq, isNotNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, lt, or, sql } from 'drizzle-orm';
 import { createHash, randomBytes } from 'node:crypto';
 import { withTenant, type Db, type Tx } from '../db/client';
 import { accessLinks, contractors, memberships, notifications, projectMembers, users } from '../db/schema';
@@ -7,6 +7,7 @@ import type { TemplateName, TemplateParams } from './templates';
 
 const LINK_DAYS = 14;
 const MAX_ATTEMPTS = 5;
+const CLAIM_TIMEOUT = sql`interval '5 minutes'`;
 
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -46,9 +47,23 @@ export async function notifyInspectors(tx: Tx, organizationId: string, template:
  * It needs its own database role, because the API's role cannot read across tenants.
  */
 export async function dispatchQueued(db: Db, organizationId: string, channel: Channel): Promise<number> {
-  const queued = await withTenant(db, organizationId, (tx) =>
-    tx.select().from(notifications).where(and(eq(notifications.status, 'queued'), eq(notifications.channel, channel.name))).limit(50),
-  );
+  // Claim messages before sending. Two senders running at once (two requests finishing together) each get
+  // different rows, because a claimed row is skipped by the other; nobody receives the same message twice.
+  const queued = await withTenant(db, organizationId, (tx) => {
+    const claimable = tx
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.channel, channel.name),
+          or(eq(notifications.status, 'queued'), and(eq(notifications.status, 'sending'), lt(notifications.claimedAt, sql`now() - ${CLAIM_TIMEOUT}`))),
+        ),
+      )
+      .orderBy(notifications.createdAt)
+      .limit(50)
+      .for('update', { skipLocked: true });
+    return tx.update(notifications).set({ status: 'sending', claimedAt: sql`now()` }).where(inArray(notifications.id, claimable)).returning();
+  });
   let sent = 0;
   for (const n of queued) {
     const token = randomBytes(32).toString('base64url');
