@@ -31,6 +31,12 @@ export async function pullIssues(db: LocalDb) {
   const tx = db.transaction(['issues', 'meta'], 'readwrite');
   await tx.objectStore('meta').put(me.role, 'role');
   await tx.objectStore('meta').put(projects, 'projects');
+  // Drop issues this user can no longer see (reassigned to another contractor, or another user's leftovers).
+  // Ones with changes still waiting stay until those changes have been sent.
+  const visible = new Set(remote.map((r) => r.id));
+  for (const local of await tx.objectStore('issues').getAll()) {
+    if (!local.pending && !visible.has(local.id)) await tx.objectStore('issues').delete(local.id);
+  }
   for (const r of remote) {
     const local = await tx.objectStore('issues').get(r.id);
     if (local?.pending) continue;
@@ -40,4 +46,29 @@ export async function pullIssues(db: LocalDb) {
     });
   }
   await tx.done;
+}
+
+/**
+ * The on-device data belongs to one person. If a different person is now signed in on this browser,
+ * clear it before anything syncs, so one person's unsent changes are never sent under another's name
+ * and nobody sees issues cached for someone else.
+ * With no signal the check waits for the next start; the data stays as it was.
+ */
+export async function clearIfUserChanged(db: LocalDb): Promise<boolean> {
+  let me: { userId: string; organizationId: string };
+  try {
+    me = await get<{ userId: string; organizationId: string }>('/v1/me');
+  } catch {
+    return false;
+  }
+  const who = `${me.organizationId}:${me.userId}`;
+  const before = await db.get('meta', 'user');
+  if (before === who) return false;
+  const tx = db.transaction(['issues', 'outbox', 'photos', 'meta'], 'readwrite');
+  if (before !== undefined) {
+    await Promise.all([tx.objectStore('issues').clear(), tx.objectStore('outbox').clear(), tx.objectStore('photos').clear(), tx.objectStore('meta').clear()]);
+  }
+  await tx.objectStore('meta').put(who, 'user');
+  await tx.done;
+  return before !== undefined;
 }
