@@ -15,7 +15,16 @@ export const testUrls = () => {
 
 export default async function setup() {
   const client = new pg.Client({ connectionString: ADMIN });
-  await client.connect();
+  try {
+    await client.connect();
+  } catch (err) {
+    const where = new URL(ADMIN);
+    throw new Error(
+      `The API tests need PostgreSQL at ${where.hostname}:${where.port || 5432} and could not reach it (${(err as Error).message}).\n` +
+        'In a codespace, the database starts with the codespace: rebuild it from the command palette with "Codespaces: Rebuild Container".\n' +
+        'On your own computer, run: docker compose up -d',
+    );
+  }
   await client.query('DROP DATABASE IF EXISTS sip_test WITH (FORCE)');
   await client.query('CREATE DATABASE sip_test');
   await client.query(`DO $$ BEGIN
